@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import cv2
+import numpy as np
 from torchvision import transforms
 
 # Define the model architecture (same as the trained model)
@@ -35,7 +36,7 @@ class GenderRecognitionModel(nn.Module):
         return x
 
 # Load the trained model
-model_path = r'C:\Users\mehrs\SIH\PA-100K\gender_recognition_model.pth'
+model_path = r'C:\Users\aarusavla\codes\SIH\DRAUPADI\PA-100K\gender_recognition_model1.pth'
 model = GenderRecognitionModel()
 model.load_state_dict(torch.load(model_path))
 model.eval()
@@ -59,6 +60,22 @@ def gender_prediction(region):
         prediction = torch.round(output).item()
     return "Male" if prediction < 0.5 else "Female"
 
+# Preprocessing function to handle grainy input
+def preprocess_frame(frame):
+    # Apply Gaussian blur to reduce noise
+    blurred_frame = cv2.GaussianBlur(frame, (5, 5), 0)
+    
+    # # Convert to grayscale
+    # gray_frame = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
+    
+    # # Apply histogram equalization to improve contrast
+    # equalized_frame = cv2.equalizeHist(gray_frame)
+    
+    # # Convert back to BGR (color) after equalization
+    # equalized_bgr = cv2.cvtColor(equalized_frame, cv2.COLOR_GRAY2BGR)
+    
+    return blurred_frame
+
 # Open the webcam
 cap = cv2.VideoCapture(0)
 
@@ -73,8 +90,11 @@ while True:
     # Optionally resize the frame for faster processing (e.g., width=640)
     frame_resized = cv2.resize(frame, (640, 480))
 
+    # Preprocess the frame (denoise, equalize, etc.)
+    processed_frame = preprocess_frame(frame_resized)
+
     # Convert to grayscale (needed for blob detection)
-    gray_frame = cv2.cvtColor(frame_resized, cv2.COLOR_BGR2GRAY)
+    gray_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2GRAY)
 
     # Detect blobs (simulating person detection)
     keypoints = detector.detect(gray_frame)
@@ -87,19 +107,19 @@ while True:
         # Define region of interest (ROI) around each detected blob
         x1, y1 = max(0, x - size // 2), max(0, y - size // 2)
         x2, y2 = min(frame_resized.shape[1], x + size // 2), min(frame_resized.shape[0], y + size // 2)
-        roi = frame_resized[y1:y2, x1:x2]
+        roi = processed_frame[y1:y2, x1:x2]
 
         # Predict gender for the ROI
         gender = gender_prediction(roi)
 
         # Draw a rectangle around the ROI (detected person)
-        cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (255, 0, 0), 2)
+        cv2.rectangle(processed_frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
         # Display the gender prediction
-        cv2.putText(frame_resized, gender, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+        cv2.putText(processed_frame, gender, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
 
     # Display the resulting frame
-    cv2.imshow('Gender Recognition', frame_resized)
+    cv2.imshow('Gender Recognition', processed_frame)
 
     # Break the loop when 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):

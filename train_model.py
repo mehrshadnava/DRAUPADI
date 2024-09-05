@@ -5,6 +5,9 @@ from datasetloader import PA100kDataset, train_transforms, val_transforms
 from torch.utils.data import DataLoader, Subset
 import numpy as np
 
+# Check for GPU availability
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class GenderRecognitionModel(nn.Module):
     def __init__(self):
         super(GenderRecognitionModel, self).__init__()
@@ -34,14 +37,14 @@ class GenderRecognitionModel(nn.Module):
         return x
 
 # Initialize the model, loss function, and optimizer
-model = GenderRecognitionModel()
+model = GenderRecognitionModel().to(device)  # Move model to GPU
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Paths to data and CSV files
-data_dir = r'C:\Users\mehrs\SIH\PA-100K\data'
-train_csv = r'C:\Users\mehrs\SIH\PA-100K\train.csv'
-val_csv = r'C:\Users\mehrs\SIH\PA-100K\val.csv'
+data_dir = r'C:\Users\aarusavla\codes\SIH\DRAUPADI\PA-100K\data'
+train_csv = r'C:\Users\aarusavla\codes\SIH\DRAUPADI\PA-100K\train.csv'
+val_csv = r'C:\Users\aarusavla\codes\SIH\DRAUPADI\PA-100K\val.csv'
 
 # Initialize datasets with correct paths
 full_train_dataset = PA100kDataset(csv_file=train_csv, root_dir=data_dir, transform=train_transforms)
@@ -50,7 +53,7 @@ full_val_dataset = PA100kDataset(csv_file=val_csv, root_dir=data_dir, transform=
 # Create a subset of 10% of the training data
 indices = np.arange(len(full_train_dataset))
 np.random.shuffle(indices)
-subset_size = int(0.01 * len(full_train_dataset))
+subset_size = int(0.1 * len(full_train_dataset))
 subset_indices = indices[:subset_size]
 
 # Create subsets
@@ -67,6 +70,7 @@ def train_model(model, train_loader, val_loader, num_epochs=10):
         model.train()
         running_loss = 0.0
         for images, labels in train_loader:
+            images, labels = images.to(device), labels.to(device)  # Move data and labels to GPU
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs.squeeze(), labels[:, 0])
@@ -82,6 +86,7 @@ def train_model(model, train_loader, val_loader, num_epochs=10):
         val_loss = 0.0
         with torch.no_grad():
             for images, labels in val_loader:
+                images, labels = images.to(device), labels.to(device)  # Move data and labels to GPU
                 outputs = model(images)
                 loss = criterion(outputs.squeeze(), labels[:, 0])
                 val_loss += loss.item() * images.size(0)
@@ -93,4 +98,4 @@ def train_model(model, train_loader, val_loader, num_epochs=10):
 train_model(model, train_loader, val_loader)
 
 # Save the trained model
-torch.save(model.state_dict(), r'C:\Users\mehrs\SIH\PA-100K\gender_recognition_model1.pth')
+torch.save(model.state_dict(), r'C:\Users\aarusavla\codes\SIH\DRAUPADI\PA-100K\gender_recognition_model1.pth')
