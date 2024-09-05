@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from datasetloader import train_loader, val_loader  # Import loaders from datasetloader.py
+from datasetloader import PA100kDataset, train_transforms, val_transforms
+from torch.utils.data import DataLoader, Subset
+import numpy as np
 
 class GenderRecognitionModel(nn.Module):
     def __init__(self):
@@ -36,6 +38,29 @@ model = GenderRecognitionModel()
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+# Paths to data and CSV files
+data_dir = r'C:\Users\mehrs\SIH\PA-100K\data'
+train_csv = r'C:\Users\mehrs\SIH\PA-100K\train.csv'
+val_csv = r'C:\Users\mehrs\SIH\PA-100K\val.csv'
+
+# Initialize datasets with correct paths
+full_train_dataset = PA100kDataset(csv_file=train_csv, root_dir=data_dir, transform=train_transforms)
+full_val_dataset = PA100kDataset(csv_file=val_csv, root_dir=data_dir, transform=val_transforms)
+
+# Create a subset of 10% of the training data
+indices = np.arange(len(full_train_dataset))
+np.random.shuffle(indices)
+subset_size = int(0.01 * len(full_train_dataset))
+subset_indices = indices[:subset_size]
+
+# Create subsets
+train_dataset = Subset(full_train_dataset, subset_indices)
+val_dataset = full_val_dataset  # Optionally, you can also create a subset for validation
+
+# Create data loaders
+train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False)
+
 # Training function
 def train_model(model, train_loader, val_loader, num_epochs=10):
     for epoch in range(num_epochs):
@@ -68,4 +93,4 @@ def train_model(model, train_loader, val_loader, num_epochs=10):
 train_model(model, train_loader, val_loader)
 
 # Save the trained model
-torch.save(model.state_dict(), 'gender_recognition_model.h5')
+torch.save(model.state_dict(), r'C:\Users\mehrs\SIH\PA-100K\gender_recognition_model1.pth')
