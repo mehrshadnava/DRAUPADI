@@ -53,7 +53,7 @@ full_val_dataset = PA100kDataset(csv_file=val_csv, root_dir=data_dir, transform=
 # Create a subset of 10% of the training data
 indices = np.arange(len(full_train_dataset))
 np.random.shuffle(indices)
-subset_size = int(0.1 * len(full_train_dataset))
+subset_size = int(0.1* len(full_train_dataset))
 subset_indices = indices[:subset_size]
 
 # Create subsets
